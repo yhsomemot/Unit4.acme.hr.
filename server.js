@@ -9,19 +9,71 @@ const port = process.env.PORT || 3000
 app.use(express.json())
 app.use(require('morgan')('dev'))
 
-app.get('/api/employees', async (req, res, next) => {})
-app.get('/api/departments', async (req, res, next) => {})
-app.post('/api/employees', async (req, res, next) => {})
-app.delete('/api/employees/:id', async (req, res, next) => {})
-app.put('/api/employees/:id', async (req, res, next) => {})
+app.get('/api/departments', async (req, res, next) => {
+  try {
+    const SQL = `
+      SELECT * from departments
+    `
+    const response = await client.query(SQL)
+    res.send(response.rows)
+  } catch (ex) {
+    next(ex)
+  }
+})
+
+app.get('/api/employees', async (req, res, next) => {
+  try {
+    const SQL = `
+      SELECT * from employees
+    `
+    const response = await client.query(SQL)
+    res.send(response.rows)
+  } catch (ex) {
+    next(ex)
+  }
+})
+
+app.post('/api/employees', async (req, res, next) => {
+})
+
+app.put('/api/employees/:id', async (req, res, next) => {
+})
+
+app.delete('/api/employees/:id', async (req, res, next) => {
+})
 
 const init = async () => {
-    let SQL = `
+  await client.connect()
+  console.log('connected to database')
+  let SQL = `
     DROP TABLE IF EXISTS employees;
-    DROP TABLE IF EXISTS departments;    
-    `;
+    DROP TABLE IF EXISTS departments;
+    CREATE TABLE departments(
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100)
+    );
+    CREATE TABLE employees(
+      id SERIAL PRIMARY KEY,
+      created_at TIMESTAMP DEFAULT now(),
+      updated_at TIMESTAMP DEFAULT now(),
+      is_admin BOOLEAN DEFAULT FALSE,
+      name VARCHAR(255) NOT NULL,
+      category_id INTEGER REFERENCES departments(id) NOT NULL
+    );
+  `
+  await client.query(SQL)
+  console.log('tables created')
+  SQL = `
+    INSERT INTO departments(name) VALUES('HR');
+    INSERT INTO departments(name) VALUES('IT');
+    INSERT INTO departments(name) VALUES('OPS');
+    INSERT INTO employees(name, is_admin, category_id) VALUES('GEORGE', true, (SELECT id FROM departments WHERE name='HR'));
+    INSERT INTO employees(name, is_admin, category_id) VALUES('MARY', true, (SELECT id FROM departments WHERE name='OPS'));
+    INSERT INTO employees(name, category_id) VALUES('LOU', (SELECT id FROM departments WHERE name='IT'));
+  `
+  await client.query(SQL)
+  console.log('data seeded')
+  app.listen(port, () => console.log(`listening on port ${port}`))
+}
 
-
-};
-
-init();
+init()
