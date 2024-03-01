@@ -34,12 +34,48 @@ app.get('/api/employees', async (req, res, next) => {
 })
 
 app.post('/api/employees', async (req, res, next) => {
+  try {
+    const SQL = `
+      INSERT INTO employees(name, category_id)
+      VALUES($1, $2)
+      RETURNING *
+    `
+    const response = await client.query(SQL, [req.body.name, req.body.category_id])
+    res.send(response.rows[0])
+  } catch (ex) {
+    next(ex)
+  }
 })
 
 app.put('/api/employees/:id', async (req, res, next) => {
+  try {
+    const SQL = `
+      UPDATE employees
+      SET name=$1, category_id=$2, updated_at= now()
+      WHERE id=$3 RETURNING *
+    `
+    const response = await client.query(SQL, [
+      req.body.name,
+      req.body.category_id,
+      req.params.id
+    ])
+    res.send(response.rows[0])
+  } catch (ex) {
+    next(ex)
+  }
 })
 
 app.delete('/api/employees/:id', async (req, res, next) => {
+  try {
+    const SQL = `
+      DELETE from employees
+      WHERE id = $1
+    `
+    const response = await client.query(SQL, [req.params.id])
+    res.sendStatus(204)
+  } catch (ex) {
+    next(ex)
+  }
 })
 
 const init = async () => {
@@ -69,7 +105,7 @@ const init = async () => {
     INSERT INTO departments(name) VALUES('OPS');
     INSERT INTO employees(name, is_admin, category_id) VALUES('GEORGE', true, (SELECT id FROM departments WHERE name='HR'));
     INSERT INTO employees(name, is_admin, category_id) VALUES('MARY', true, (SELECT id FROM departments WHERE name='OPS'));
-    INSERT INTO employees(name, category_id) VALUES('LOU', (SELECT id FROM departments WHERE name='IT'));
+    INSERT INTO employees(name, is_admin, category_id) VALUES('LOU', true, (SELECT id FROM departments WHERE name='IT'));
   `
   await client.query(SQL)
   console.log('data seeded')
