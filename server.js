@@ -36,11 +36,11 @@ app.get('/api/employees', async (req, res, next) => {
 app.post('/api/employees', async (req, res, next) => {
   try {
     const SQL = `
-      INSERT INTO employees(name, category_id)
+      INSERT INTO employees(name, department_id)
       VALUES($1, $2)
       RETURNING *
     `
-    const response = await client.query(SQL, [req.body.name, req.body.category_id])
+    const response = await client.query(SQL, [req.body.name, req.body.department_id])
     res.send(response.rows[0])
   } catch (ex) {
     next(ex)
@@ -51,12 +51,12 @@ app.put('/api/employees/:id', async (req, res, next) => {
   try {
     const SQL = `
       UPDATE employees
-      SET name=$1, category_id=$2, updated_at= now()
+      SET name=$1, department_id=$2, updated_at= now()
       WHERE id=$3 RETURNING *
     `
     const response = await client.query(SQL, [
       req.body.name,
-      req.body.category_id,
+      req.body.department_id,
       req.params.id
     ])
     res.send(response.rows[0])
@@ -90,11 +90,11 @@ const init = async () => {
     );
     CREATE TABLE employees(
       id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT now(),
       updated_at TIMESTAMP DEFAULT now(),
       is_admin BOOLEAN DEFAULT FALSE,
-      name VARCHAR(255) NOT NULL,
-      category_id INTEGER REFERENCES departments(id) NOT NULL
+      department_id INTEGER REFERENCES departments(id) NOT NULL
     );
   `
   await client.query(SQL)
@@ -103,9 +103,11 @@ const init = async () => {
     INSERT INTO departments(name) VALUES('HR');
     INSERT INTO departments(name) VALUES('IT');
     INSERT INTO departments(name) VALUES('OPS');
-    INSERT INTO employees(name, is_admin, category_id) VALUES('GEORGE', true, (SELECT id FROM departments WHERE name='HR'));
-    INSERT INTO employees(name, is_admin, category_id) VALUES('MARY', true, (SELECT id FROM departments WHERE name='OPS'));
-    INSERT INTO employees(name, is_admin, category_id) VALUES('LOU', true, (SELECT id FROM departments WHERE name='IT'));
+    
+    INSERT INTO employees(name, is_admin, department_id) VALUES('GEORGE', true, (SELECT id FROM departments WHERE name='HR'));
+    INSERT INTO employees(name, is_admin, department_id) VALUES('MARY', true, (SELECT id FROM departments WHERE name='OPS'));
+    INSERT INTO employees(name, is_admin, department_id) VALUES('LOU', true, (SELECT id FROM departments WHERE name='IT'));
+    INSERT INTO employees(name, department_id) VALUES('KORY', (SELECT id FROM departments WHERE name='HR'));
   `
   await client.query(SQL)
   console.log('data seeded')
